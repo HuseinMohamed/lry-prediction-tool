@@ -3,7 +3,7 @@ import numpy as np
 import pickle
 import os
 
-# 1. إعدادات الصفحة الواجهة
+# 1. Dashboard settings
 st.set_page_config(
     page_title="LRY Predictor Tool",
     page_icon="🔬",
@@ -13,7 +13,7 @@ st.set_page_config(
 st.title("🔬 LRY Prediction Tool — DES Pretreatment")
 st.markdown("---")
 
-# 2. القواميس الرسمية المطابقة تماماً لملفك الأصلي
+# 2. Dictionaries
 HBD_PROPS = {
     "LA" :{"MW":90.08, "pKa":3.86,  "HBD_count":2,"HBA_count":3,"viscosity":10.0},
     "OA" :{"MW":90.03, "pKa":1.25,  "HBD_count":2,"HBA_count":4,"viscosity":10.0},
@@ -38,7 +38,7 @@ BIOMASS_ENC = {
     "Luffa"                 : 50.1,
 }
 
-# 3. دالة تحميل الموديل الآمنة
+# 3. Data loading
 @st.cache_resource
 def load_prediction_model():
     if not os.path.exists("best_model.pkl"):
@@ -48,14 +48,13 @@ def load_prediction_model():
     with open("best_model.pkl", "rb") as f:
         saved = pickle.load(f)
     
-    # التأكد من استخراج الموديل سواء كان قاموساً أو كائناً مباشراً
     if isinstance(saved, dict) and "model" in saved:
         return saved["model"]
     return saved
 
 model = load_prediction_model()
 
-# 4. بناء الواجهة الرسومية وتوزيع العناصر في أعمدة
+# 4. Platform
 col1, col2 = st.columns(2)
 
 with col1:
@@ -79,14 +78,13 @@ with col2:
 
 st.markdown("###")
 
-# 5. زر الحساب والتنبؤ
+# 5. Prediction Button
 if st.button("🚀 Calculate Prediction", type="primary", use_container_width=True):
-    # جلب الخصائص تلقائياً بناءً على اختيار الـ Dropdown بدون أخطاء
     props = HBD_PROPS[hbd]
     biomass_enc = BIOMASS_ENC.get(biomass, 51.9)
     hbd_enc = np.mean(list(BIOMASS_ENC.values()))
 
-    # تجهيز المصفوفة بنفس الترتيب الدقيق للموديل الخاص بك
+    # Array Preperation
     features = np.array([[
         cellulose, hemicellulose, lignin, size,
         temp, time, sl_ratio, hba_hbd_ratio,
@@ -96,14 +94,14 @@ if st.button("🚀 Calculate Prediction", type="primary", use_container_width=Tr
         biomass_enc, hbd_enc
     ]])
 
-    # التنبؤ وحصر النسبة
+    # Prediction
     lry = model.predict(features)[0]
     result = float(np.clip(lry, 0, 100))
 
-    # عرض النتيجة بشكل احترافي
+    # Result
     st.success(f"🎯 **Predicted Lignin Removal Yield (LRY) = {result:.2f}%**")
     
-    # تقييم النتيجة طبقاً لمعاييرك
+    # Result Evaluation
     if result >= 70:
         st.info("✅ Excellent delignification")
     elif result >= 50:
